@@ -6,17 +6,19 @@ Sprawdza, jak daleko w przod da sie przewidziec odchylke - ale teraz
 KAZDY horyzont liczymy WIELE RAZY z roznym losowym podzialem plikow.
 Dzieki temu zamiast jednej liczby AUROC dostajemy SREDNIA +- ODCHYLENIE.
 
-Po co? Bo przy 18 plikach test opiera sie na zaledwie 3 plikach. Jedna
+Po co? Bo przy 18 plikach test opiera sie na zaledwie ~3 plikach. Jedna
 liczba (np. 0.97) moze byc szczesciem przy konkretnym podziale. Powtarzajac
 z roznym ziarnem widzimy, czy wynik jest STABILNY, czy skacze.
 
-Dla kazdego H i kazdego powtorzenia liczymy te same dwie rzeczy co wczesniej:
+Dla kazdego H i kazdego powtorzenia liczymy te same dwie rzeczy:
   - AUROC sieci (prawdziwa predykcja),
   - AUROC "sciagi" (czy biezaca odchylka sama zdradza przyszlosc).
 
-Korzysta z tej samej logiki etykiet (z 02) i tej samej sieci (z 03).
+Korzysta z tej samej logiki etykiet i stalych (z parametry.py) oraz
+tej samej architektury sieci co 05_siec.py.
 
-Wymaga: okna_dane.npz
+Wejscie:  wyniki/okna_dane.npz   (z 01_parsowanie.py)
+Wyjscie:  wyniki/horyzonty.png, wyniki/04_horyzonty_log.txt
 
 Uruchomienie:
     python 04_horyzonty.py
@@ -29,11 +31,14 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
+from parametry import (
+    C_WZORZEC, PROG_WZGLEDNY,
+    biezace_odchylki, etykiety_predykcyjne,
+    sciezka_wyniku, Logger,
+)
+
 # --- ustawienia ---
 PLIK_DANE = "okna_dane.npz"
-C_WZORZEC = 0.00278
-PROG_WZGLEDNY = 4     # prog WZGLEDNY (bezwymiarowy) - spojny z 02_etykietuj.py
-EPS_KN = 0.05             # ochrona przed dzieleniem przez ~0 przy zawracaniu tloka
 HORYZONTY = [2, 5, 10, 20, 40]
 EPOKI = 25
 UDZIAL_TEST = 0.2
@@ -43,26 +48,7 @@ UDZIAL_WAL = 0.2
 LICZBA_POWTORZEN = 7
 
 
-def biezace_odchylki(X, C):
-    """WZGLEDNE odstepstwo sily od wzorca = |F - C*v|/(|C*v|+eps).
-    Identyczne jak w 02_etykietuj.py - oba skrypty musza liczyc tak samo."""
-    wynik = []
-    for o in X:
-        F = o[:, 0]
-        v = o[:, 2]
-        wzorzec = C * v
-        wynik.append((np.abs(F - wzorzec) / (np.abs(wzorzec) + EPS_KN)).mean())
-    return np.array(wynik)
-
-
-def etykiety_predykcyjne(odchylki, id_pliku, H, prog):
-    n = len(odchylki)
-    y = np.full(n, -1, dtype=int)
-    for i in range(n):
-        j = i + H
-        if j < n and id_pliku[j] == id_pliku[i]:
-            y[i] = 1 if odchylki[j] > prog else 0
-    return y
+log = Logger("04_horyzonty_log.txt")
 
 
 def podziel_po_plikach(id_pliku, ziarno):
@@ -119,7 +105,7 @@ def jeden_przebieg(X, yv, idp, ziarno):
 
 
 def main():
-    dane = np.load(PLIK_DANE, allow_pickle=True)
+    dane = np.load(sciezka_wyniku(PLIK_DANE), allow_pickle=True)
     X_all = dane["X"].astype("float32")
     id_all = dane["id_pliku"]
     odch_all = biezace_odchylki(X_all, C_WZORZEC)
@@ -134,7 +120,7 @@ def main():
         X, yv, idp, odch = X_all[maska], y[maska], id_all[maska], odch_all[maska]
 
         if (yv == 1).sum() < 5 or (yv == 0).sum() < 5:
-            print(f"H={H}: za malo przykladow jednej klasy - pomijam")
+            log(f"H={H}: za malo przykladow jednej klasy - pomijam")
             continue
 
         # sciaga nie zalezy od ziarna (to staly pomiar) - liczymy raz
@@ -148,7 +134,7 @@ def main():
                 wyniki.append(a)
 
         if not wyniki:
-            print(f"H={H}: zaden podzial nie dal obu klas w tescie - pomijam")
+            log(f"H={H}: zaden podzial nie dal obu klas w tescie - pomijam")
             continue
 
         wyniki = np.array(wyniki)
@@ -157,8 +143,8 @@ def main():
         siec_odchyl.append(wyniki.std())
         sciaga_srednia.append(auc_sciaga)
 
-        print(f"H={H:3d}: siec {wyniki.mean():.3f} +- {wyniki.std():.3f} "
-              f"(z {len(wyniki)} powt.) | sciaga {auc_sciaga:.3f}")
+        log(f"H={H:3d}: siec {wyniki.mean():.3f} +- {wyniki.std():.3f} "
+            f"(z {len(wyniki)} powt.) | sciaga {auc_sciaga:.3f}")
 
     # --- wykres ze slupkami bledu ---
     H_uzyte = np.array(H_uzyte)
@@ -177,11 +163,14 @@ def main():
     plt.grid(alpha=0.3)
     plt.ylim(0.3, 1.05)
     plt.tight_layout()
-    plt.savefig("horyzonty.png", dpi=120)
-    print("\nWykres zapisany do: horyzonty.png")
-    print(f"(kazdy punkt sieci = srednia z {LICZBA_POWTORZEN} podzialow, slupek = odchylenie)")
-    print("\nJAK CZYTAC: maly slupek bledu = wynik STABILNY (nie zalezy od podzialu).")
-    print("Duzy slupek = wynik niepewny, zalezny od tego ktore pliki w tescie.")
+    sciezka_png = sciezka_wyniku("horyzonty.png")
+    plt.savefig(sciezka_png, dpi=120)
+    plt.close()
+    log(f"\nWykres zapisany do: {sciezka_png}")
+    log(f"(kazdy punkt sieci = srednia z {LICZBA_POWTORZEN} podzialow, slupek = odchylenie)")
+    log("\nJAK CZYTAC: maly slupek bledu = wynik STABILNY (nie zalezy od podzialu).")
+    log("Duzy slupek = wynik niepewny, zalezny od tego ktore pliki w tescie.")
+    log.zapisz()
 
 
 if __name__ == "__main__":

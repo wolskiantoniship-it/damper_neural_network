@@ -1,5 +1,5 @@
 """
-03_siec.py
+05_siec.py
 ==========
 Co robi ten skrypt (po ludzku):
 1. Wczytuje okna + etykiety (wynik z 02_etykietuj.py).
@@ -12,8 +12,12 @@ Co robi ten skrypt (po ludzku):
 5. Liczy i rysuje: krzywa ROC + AUROC, precision, recall, accuracy, F1,
    krzywa precision-recall, macierz pomylek.
 
+Wejscie:  wyniki/okna_etykiety.npz   (z 02_etykietuj.py)
+Wyjscie:  wyniki/wyniki.png, wyniki/model_amortyzator.keras,
+          wyniki/model_parametry.npz, wyniki/05_siec_log.txt
+
 Uruchomienie:
-    python 03_siec.py
+    python 05_siec.py
 """
 
 import numpy as np
@@ -26,6 +30,8 @@ from sklearn.metrics import (
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+
+from parametry import sciezka_wyniku, Logger
 
 # powtarzalnosc wynikow
 SEED = 42
@@ -43,6 +49,9 @@ ROZMIAR_BATCHA = 32
 # Jak dzielimy pliki: jaka czesc na test i walidacje (reszta na trening).
 UDZIAL_TEST = 0.2
 UDZIAL_WALIDACJA = 0.2
+
+
+log = Logger("05_siec_log.txt")
 
 
 # ============================================================
@@ -70,7 +79,7 @@ def podziel_po_plikach(id_pliku):
     maska_wal = np.isin(id_pliku, pliki_wal)
     maska_tren = np.isin(id_pliku, pliki_tren)
 
-    print(f"Pliki -> trening: {len(pliki_tren)}, walidacja: {len(pliki_wal)}, test: {len(pliki_test)}")
+    log(f"Pliki -> trening: {len(pliki_tren)}, walidacja: {len(pliki_wal)}, test: {len(pliki_test)}")
     return maska_tren, maska_wal, maska_test
 
 
@@ -177,8 +186,10 @@ def zrob_wykresy(y_test, y_prob, y_pred):
         ax.text(i, v + 0.02, f"{v:.3f}", ha="center")
 
     plt.tight_layout()
-    plt.savefig("wyniki.png", dpi=120)
-    print("\nWykresy zapisane do: wyniki.png")
+    sciezka_png = sciezka_wyniku("wyniki.png")
+    plt.savefig(sciezka_png, dpi=120)
+    plt.close(fig)
+    log(f"\nWykresy zapisane do: {sciezka_png}")
     return metryki, auroc
 
 
@@ -187,18 +198,19 @@ def zrob_wykresy(y_test, y_prob, y_pred):
 # ============================================================
 
 def main():
-    dane = np.load(PLIK_WEJSCIOWY, allow_pickle=True)
+    dane = np.load(sciezka_wyniku(PLIK_WEJSCIOWY), allow_pickle=True)
     X = dane["X"].astype("float32")
     y = dane["y"].astype("int")
     id_pliku = dane["id_pliku"]
 
-    print(f"Dane: {X.shape[0]} okien, ksztalt okna {X.shape[1:]}")
-    print(f"Rozklad etykiet -> poprawne: {(y==0).sum()}, odchylki: {(y==1).sum()}")
+    log(f"Dane: {X.shape[0]} okien, ksztalt okna {X.shape[1:]}")
+    log(f"Rozklad etykiet -> poprawne: {(y==0).sum()}, odchylki: {(y==1).sum()}")
 
     if (y == 1).sum() == 0 or (y == 0).sum() == 0:
-        print("\nUWAGA: wszystkie okna maja te sama etykiete!")
-        print("Sieci nie ma sensu trenowac. Wroc do 02_etykietuj.py i dobierz PROG,")
-        print("albo dodaj wiecej plikow z roznymi amortyzatorami.")
+        log("\nUWAGA: wszystkie okna maja te sama etykiete!")
+        log("Sieci nie ma sensu trenowac. Wroc do 02_etykietuj.py i dobierz PROG,")
+        log("albo dodaj wiecej plikow z roznymi amortyzatorami.")
+        log.zapisz()
         return
 
     maska_tren, maska_wal, maska_test = podziel_po_plikach(id_pliku)
@@ -207,7 +219,7 @@ def main():
     y_tren, y_wal, y_test = y[maska_tren], y[maska_wal], y[maska_test]
 
     # zapamietujemy parametry skalowania (z treningu) i ktore pliki sa testowe -
-    # 05_zastosowanie.py uzyje ich, by odtworzyc DOKLADNIE ten sam stan bez treningu
+    # 06_zastosowanie.py uzyje ich, by odtworzyc DOKLADNIE ten sam stan bez treningu
     srednia_skali = X[maska_tren].mean(axis=(0, 1), keepdims=True)
     odchyl_skali = X[maska_tren].std(axis=(0, 1), keepdims=True) + 1e-8
     pliki_testowe = np.unique(id_pliku[maska_test])
@@ -217,7 +229,7 @@ def main():
     waga_klas = {0: 1.0, 1: float(n0) / max(1, n1)}
 
     model = zbuduj_siec(X_tren.shape[1:])
-    model.summary()
+    model.summary(print_fn=log)
 
     model.fit(
         X_tren, y_tren,
@@ -234,22 +246,25 @@ def main():
 
     metryki, auroc = zrob_wykresy(y_test, y_prob, y_pred)
 
-    print("\n=== WYNIKI NA TESCIE ===")
-    print(f"AUROC:     {auroc:.3f}")
+    log("\n=== WYNIKI NA TESCIE ===")
+    log(f"AUROC:     {auroc:.3f}")
     for nazwa, wartosc in metryki.items():
-        print(f"{nazwa:10s} {wartosc:.3f}")
+        log(f"{nazwa:10s} {wartosc:.3f}")
 
-    model.save("model_amortyzator.keras")
-    print("\nModel zapisany do: model_amortyzator.keras")
+    sciezka_model = sciezka_wyniku("model_amortyzator.keras")
+    model.save(sciezka_model)
+    log(f"\nModel zapisany do: {sciezka_model}")
 
-    # zapisujemy parametry potrzebne 05_zastosowanie.py, by uzyc tej samej sieci
+    # zapisujemy parametry potrzebne 06_zastosowanie.py, by uzyc tej samej sieci
+    sciezka_param = sciezka_wyniku("model_parametry.npz")
     np.savez(
-        "model_parametry.npz",
+        sciezka_param,
         srednia=srednia_skali,
         odchyl=odchyl_skali,
         pliki_testowe=pliki_testowe,
     )
-    print("Parametry (skalowanie + pliki testowe) zapisane do: model_parametry.npz")
+    log(f"Parametry (skalowanie + pliki testowe) zapisane do: {sciezka_param}")
+    log.zapisz()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,73 @@
+Wszystkie wyniki ladnie do katalogu: wyniki_podgladu/
+
+============================================================
+CZESC 1: PODGLAD OKIEN
+============================================================
+X - ksztalt: (2412, 20, 3)
+  2412 okien, kazde 20 probek x 3 kolumny
+  kolumny: [0]=sila[kN], [1]=przemieszczenie[mm], [2]=predkosc[mm/s]
+  unikalne pliki: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17]
+
+Pierwsze okno, pierwsze 5 probek:
+  sila      przem     predkosc
+    -0.028    -0.007    -1.163
+    -0.120    -0.101    -1.083
+    -0.158    -0.199    -0.990
+    -0.214    -0.298    -0.988
+    -0.208    -0.396    -1.002
+
+Zapisano: wyniki_podgladu\01_podglad_okien.png
+
+============================================================
+CZESC 2: PODGLAD ETYKIET (predykcyjnych)
+============================================================
+Etykieta mowi: czy za H okien NADEJDZIE odchylka od normy.
+Wszystkich okien z etykieta: 2412
+  0 = spokojnie:        1736  (72.0%)
+  1 = nadchodzi:        676  (28.0%)
+
+plik         okien  spokojne  nadchodzi      %
+--------------------------------------------------
+plik #0         134        92         42  31.3%
+plik #1         134       101         33  24.6%
+plik #2         134       134          0   0.0%
+plik #3         134       134          0   0.0%
+plik #4         134       134          0   0.0%
+plik #5         134       134          0   0.0%
+plik #6         134       134          0   0.0%
+plik #7         134        69         65  48.5%
+plik #8         134        82         52  38.8%
+plik #9         134        83         51  38.1%
+plik #10        134        83         51  38.1%
+plik #11        134        83         51  38.1%
+plik #12        134        84         50  37.3%
+plik #13        134        64         70  52.2%
+plik #14        134        68         66  49.3%
+plik #15        134        85         49  36.6%
+plik #16        134        94         40  29.9%
+plik #17        134        78         56  41.8%
+
+Zapisano: wyniki_podgladu\02_podglad_etykiet.png
+
+============================================================
+CZESC 3: PODGLAD PROGU
+============================================================
+Odchylki wzgledne: mediana 2.345, max 9.109
+Horyzont H = 10
+
+  prog |  % klasy 1 |  poprawne |  odchylki
+---------------------------------------------
+  0.50 |      86.9% |       317 |      2095
+  1.00 |      70.4% |       714 |      1698
+  1.50 |      65.0% |       845 |      1567
+  2.00 |      49.8% |      1211 |      1201
+  2.50 |      45.8% |      1308 |      1104
+  3.00 |      37.9% |      1497 |       915
+  4.00 |      28.0% |      1736 |       676
+  5.00 |      19.1% |      1951 |       461
+  6.00 |       9.4% |      2185 |       227
+  7.00 |       2.9% |      2341 |        71
+
+WSKAZOWKA: szukaj progu, gdzie klasa 1 to ~10-40%.
+
+Zapisano: wyniki_podgladu\03_podglad_progu.png

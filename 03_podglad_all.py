@@ -1,9 +1,9 @@
 """
-podglad_all.py
-==============
+03_podglad_all.py
+=================
 Co robi (po ludzku):
 Scala trzy osobne podglady w jeden skrypt i zapisuje WSZYSTKIE wyniki
-(obrazki + tekstowe podsumowanie) do osobnego katalogu.
+(obrazki + tekstowe podsumowanie) do folderu wynikow.
 
 Zawiera trzy czesci:
   1. PODGLAD OKIEN          - jak wygladaja dane okien (z okna_etykiety.npz)
@@ -13,69 +13,44 @@ Zawiera trzy czesci:
 Kazda czesc dziala niezaleznie - jak ktoregos pliku wejsciowego brakuje,
 ta czesc jest pomijana z komunikatem, a reszta i tak sie wykona.
 
-Wszystko laduje do katalogu KATALOG_WYNIKOW (domyslnie 'wyniki_podgladu').
+Stale i funkcje pochodza z parametry.py (jedno zrodlo prawdy).
+Wszystkie wyniki laduja do folderu wynikow (parametry.FOLDER_WYNIKI).
 
 Uruchomienie:
-    python podglad_all.py
+    python 03_podglad_all.py
 """
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+from parametry import (
+    C_WZORZEC, HORYZONT_H,
+    biezace_odchylki, etykiety_predykcyjne,
+    sciezka_wyniku, Logger,
+)
+
 # ============================================================
 # USTAWIENIA
 # ============================================================
-KATALOG_WYNIKOW = "wyniki_podgladu"
 
-PLIK_ETYKIETY = "okna_etykiety.npz"   # dla czesci 1 i 2
-PLIK_DANE = "okna_dane.npz"           # dla czesci 3
+PLIK_ETYKIETY = "okna_etykiety.npz"   # dla czesci 1 i 2 (w folderze wynikow)
+PLIK_DANE = "okna_dane.npz"           # dla czesci 3 (w folderze wynikow)
 
 # czesc 1
 ILE_OKIEN_NA_WYKRESIE = 10
 
-# czesc 3 (musi pasowac do 02_etykietuj.py)
-C_WZORZEC = 0.00278
-EPS_KN = 0.05
-HORYZONT_H = 10
+# czesc 3 - progi do sprawdzenia (jak prog wplywa na balans klas)
 PROGI = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0]
 
 
-# bufor na tekst - zapiszemy go tez do pliku, nie tylko na ekran
-_raport = []
-
-def loguj(tekst=""):
-    """Wypisuje na ekran I zapamietuje do raportu tekstowego."""
-    print(tekst)
-    _raport.append(tekst)
+# wspolny log na cala diagnoze
+log = Logger("03_podglad_log.txt")
 
 
-def sciezka(nazwa):
-    """Pelna sciezka do pliku w katalogu wynikow."""
-    return os.path.join(KATALOG_WYNIKOW, nazwa)
-
-
-# ============================================================
-# WSPOLNE FUNKCJE (dla czesci 3)
-# ============================================================
-
-def biezace_odchylki(X, C):
-    wynik = []
-    for o in X:
-        F, v = o[:, 0], o[:, 2]
-        wzor = C * v
-        wynik.append((np.abs(F - wzor) / (np.abs(wzor) + EPS_KN)).mean())
-    return np.array(wynik)
-
-
-def etykiety_predykcyjne(odchylki, id_pliku, H, prog):
-    n = len(odchylki)
-    y = np.full(n, -1, dtype=int)
-    for i in range(n):
-        j = i + H
-        if j < n and id_pliku[j] == id_pliku[i]:
-            y[i] = 1 if odchylki[j] > prog else 0
-    return y
+def wejscie(nazwa):
+    """Pelna sciezka do pliku WEJSCIOWEGO (lezy w folderze wynikow)."""
+    return sciezka_wyniku(nazwa)
 
 
 # ============================================================
@@ -83,29 +58,29 @@ def etykiety_predykcyjne(odchylki, id_pliku, H, prog):
 # ============================================================
 
 def czesc_podglad_okien():
-    if not os.path.exists(PLIK_ETYKIETY):
-        loguj(f"[CZESC 1] Pomijam - brak pliku {PLIK_ETYKIETY}")
+    if not os.path.exists(wejscie(PLIK_ETYKIETY)):
+        log(f"[CZESC 1] Pomijam - brak pliku {wejscie(PLIK_ETYKIETY)}")
         return
 
-    loguj("=" * 60)
-    loguj("CZESC 1: PODGLAD OKIEN")
-    loguj("=" * 60)
+    log("=" * 60)
+    log("CZESC 1: PODGLAD OKIEN")
+    log("=" * 60)
 
-    dane = np.load(PLIK_ETYKIETY, allow_pickle=True)
+    dane = np.load(wejscie(PLIK_ETYKIETY), allow_pickle=True)
     X = dane["X"]
-    loguj(f"X - ksztalt: {X.shape}")
-    loguj(f"  {X.shape[0]} okien, kazde {X.shape[1]} probek x {X.shape[2]} kolumny")
-    loguj(f"  kolumny: [0]=sila[kN], [1]=przemieszczenie[mm], [2]=predkosc[mm/s]")
+    log(f"X - ksztalt: {X.shape}")
+    log(f"  {X.shape[0]} okien, kazde {X.shape[1]} probek x {X.shape[2]} kolumny")
+    log(f"  kolumny: [0]=sila[kN], [1]=przemieszczenie[mm], [2]=predkosc[mm/s]")
 
     if "id_pliku" in dane:
         idp = dane["id_pliku"]
-        loguj(f"  unikalne pliki: {np.unique(idp)}")
+        log(f"  unikalne pliki: {np.unique(idp)}")
 
-    loguj("\nPierwsze okno, pierwsze 5 probek:")
-    loguj("  sila      przem     predkosc")
+    log("\nPierwsze okno, pierwsze 5 probek:")
+    log("  sila      przem     predkosc")
     for wiersz in X[0][:5]:
-        loguj(f"  {wiersz[0]:8.3f}  {wiersz[1]:8.3f}  {wiersz[2]:8.3f}")
-    loguj("")
+        log(f"  {wiersz[0]:8.3f}  {wiersz[1]:8.3f}  {wiersz[2]:8.3f}")
+    log("")
 
     n = min(ILE_OKIEN_NA_WYKRESIE, len(X))
     fig, osie = plt.subplots(n, 2, figsize=(11, 2.5 * n))
@@ -125,9 +100,9 @@ def czesc_podglad_okien():
         ax.set_xlabel("predkosc [mm/s]")
         ax.set_ylabel("sila [kN]")
     plt.tight_layout()
-    plt.savefig(sciezka("01_podglad_okien.png"), dpi=120)
+    plt.savefig(sciezka_wyniku("01_podglad_okien.png"), dpi=120)
     plt.close(fig)
-    loguj(f"Zapisano: {sciezka('01_podglad_okien.png')}\n")
+    log(f"Zapisano: {sciezka_wyniku('01_podglad_okien.png')}\n")
 
 
 # ============================================================
@@ -135,11 +110,11 @@ def czesc_podglad_okien():
 # ============================================================
 
 def czesc_podglad_etykiet():
-    if not os.path.exists(PLIK_ETYKIETY):
-        loguj(f"[CZESC 2] Pomijam - brak pliku {PLIK_ETYKIETY}")
+    if not os.path.exists(wejscie(PLIK_ETYKIETY)):
+        log(f"[CZESC 2] Pomijam - brak pliku {wejscie(PLIK_ETYKIETY)}")
         return
 
-    dane = np.load(PLIK_ETYKIETY, allow_pickle=True)
+    dane = np.load(wejscie(PLIK_ETYKIETY), allow_pickle=True)
     X = dane["X"]
     y = dane["y"]
     id_pliku = dane["id_pliku"]
@@ -149,22 +124,22 @@ def czesc_podglad_etykiet():
     n_popr = int((y == 0).sum())
     n_odch = int((y == 1).sum())
 
-    loguj("=" * 60)
-    loguj("CZESC 2: PODGLAD ETYKIET (predykcyjnych)")
-    loguj("=" * 60)
-    loguj("Etykieta mowi: czy za H okien NADEJDZIE odchylka od normy.")
-    loguj(f"Wszystkich okien z etykieta: {n}")
-    loguj(f"  0 = spokojnie:        {n_popr}  ({100*n_popr/n:.1f}%)")
-    loguj(f"  1 = nadchodzi:        {n_odch}  ({100*n_odch/n:.1f}%)")
-    loguj("")
-    loguj(f"{'plik':<10}{'okien':>8}{'spokojne':>10}{'nadchodzi':>11}{'%':>7}")
-    loguj("-" * 50)
+    log("=" * 60)
+    log("CZESC 2: PODGLAD ETYKIET (predykcyjnych)")
+    log("=" * 60)
+    log("Etykieta mowi: czy za H okien NADEJDZIE odchylka od normy.")
+    log(f"Wszystkich okien z etykieta: {n}")
+    log(f"  0 = spokojnie:        {n_popr}  ({100*n_popr/n:.1f}%)")
+    log(f"  1 = nadchodzi:        {n_odch}  ({100*n_odch/n:.1f}%)")
+    log("")
+    log(f"{'plik':<10}{'okien':>8}{'spokojne':>10}{'nadchodzi':>11}{'%':>7}")
+    log("-" * 50)
     for i in np.unique(id_pliku):
         m = id_pliku == i
         ile = int(m.sum())
         ile1 = int(y[m].sum())
-        loguj(f"plik #{i:<5}{ile:>8}{ile-ile1:>10}{ile1:>11}{100*ile1/ile:>6.1f}%")
-    loguj("")
+        log(f"plik #{i:<5}{ile:>8}{ile-ile1:>10}{ile1:>11}{100*ile1/ile:>6.1f}%")
+    log("")
 
     fig, osie = plt.subplots(2, 2, figsize=(13, 9))
 
@@ -217,9 +192,9 @@ def czesc_podglad_etykiet():
         ax.axis("off")
 
     plt.tight_layout()
-    plt.savefig(sciezka("02_podglad_etykiet.png"), dpi=120)
+    plt.savefig(sciezka_wyniku("02_podglad_etykiet.png"), dpi=120)
     plt.close(fig)
-    loguj(f"Zapisano: {sciezka('02_podglad_etykiet.png')}\n")
+    log(f"Zapisano: {sciezka_wyniku('02_podglad_etykiet.png')}\n")
 
 
 # ============================================================
@@ -227,22 +202,22 @@ def czesc_podglad_etykiet():
 # ============================================================
 
 def czesc_podglad_progu():
-    if not os.path.exists(PLIK_DANE):
-        loguj(f"[CZESC 3] Pomijam - brak pliku {PLIK_DANE}")
+    if not os.path.exists(wejscie(PLIK_DANE)):
+        log(f"[CZESC 3] Pomijam - brak pliku {wejscie(PLIK_DANE)}")
         return
 
-    dane = np.load(PLIK_DANE, allow_pickle=True)
+    dane = np.load(wejscie(PLIK_DANE), allow_pickle=True)
     X = dane["X"]
     id_pliku = dane["id_pliku"]
 
     odch = biezace_odchylki(X, C_WZORZEC)
-    loguj("=" * 60)
-    loguj("CZESC 3: PODGLAD PROGU")
-    loguj("=" * 60)
-    loguj(f"Odchylki wzgledne: mediana {np.median(odch):.3f}, max {odch.max():.3f}")
-    loguj(f"Horyzont H = {HORYZONT_H}\n")
-    loguj(f"{'prog':>6} | {'% klasy 1':>10} | {'poprawne':>9} | {'odchylki':>9}")
-    loguj("-" * 45)
+    log("=" * 60)
+    log("CZESC 3: PODGLAD PROGU")
+    log("=" * 60)
+    log(f"Odchylki wzgledne: mediana {np.median(odch):.3f}, max {odch.max():.3f}")
+    log(f"Horyzont H = {HORYZONT_H}\n")
+    log(f"{'prog':>6} | {'% klasy 1':>10} | {'poprawne':>9} | {'odchylki':>9}")
+    log("-" * 45)
 
     procenty = []
     for p in PROGI:
@@ -250,10 +225,10 @@ def czesc_podglad_progu():
         m = y >= 0
         proc = 100 * y[m].sum() / m.sum() if m.sum() else 0
         procenty.append(proc)
-        loguj(f"{p:>6.2f} | {proc:>9.1f}% | {int((y[m]==0).sum()):>9} | {int(y[m].sum()):>9}")
+        log(f"{p:>6.2f} | {proc:>9.1f}% | {int((y[m]==0).sum()):>9} | {int(y[m].sum()):>9}")
 
-    loguj("\nWSKAZOWKA: szukaj progu, gdzie klasa 1 to ~10-40%.")
-    loguj("")
+    log("\nWSKAZOWKA: szukaj progu, gdzie klasa 1 to ~10-40%.")
+    log("")
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
     ax1.plot(PROGI, procenty, "o-", color="#D85A30")
@@ -275,9 +250,9 @@ def czesc_podglad_progu():
     ax2.legend()
 
     plt.tight_layout()
-    plt.savefig(sciezka("03_podglad_progu.png"), dpi=120)
+    plt.savefig(sciezka_wyniku("03_podglad_progu.png"), dpi=120)
     plt.close(fig)
-    loguj(f"Zapisano: {sciezka('03_podglad_progu.png')}\n")
+    log(f"Zapisano: {sciezka_wyniku('03_podglad_progu.png')}\n")
 
 
 # ============================================================
@@ -285,18 +260,14 @@ def czesc_podglad_progu():
 # ============================================================
 
 def main():
-    os.makedirs(KATALOG_WYNIKOW, exist_ok=True)
-    loguj(f"Wszystkie wyniki ladnie do katalogu: {KATALOG_WYNIKOW}/\n")
+    log(f"Wszystkie wyniki laduja do folderu: {sciezka_wyniku('')}\n")
 
     czesc_podglad_okien()
     czesc_podglad_etykiet()
     czesc_podglad_progu()
 
-    # zapisz cale tekstowe podsumowanie do pliku
-    with open(sciezka("podsumowanie.txt"), "w", encoding="utf-8") as f:
-        f.write("\n".join(_raport))
-    print(f"\nTekstowe podsumowanie zapisane do: {sciezka('podsumowanie.txt')}")
-    print(f"Gotowe - zajrzyj do katalogu '{KATALOG_WYNIKOW}'.")
+    log.zapisz()
+    print(f"Gotowe - zajrzyj do folderu wynikow.")
 
 
 if __name__ == "__main__":

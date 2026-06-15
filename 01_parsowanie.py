@@ -1,13 +1,13 @@
-import numpy as np 
+import numpy as np
 from pathlib import Path
+from parametry import sciezka_wyniku, Logger
 
 
-
-FOLDER_Z_DANYMI = r"C:\Users\wolsk\Desktop\SPA2026_2\dane"
+FOLDER_Z_DANYMI = "dane"  # sciezka wzgledna - folder 'dane' obok skryptow
 LINIE_NAGLOWKA = 8
-DLUGOSC_OKNA = 20 #dlugosc jednej probki
-ZAKLADKA = 0.5 # probki nachodza na siebie w 50 procentach
-PLIK_WYJSCIOWY = "okna_dane.npz" # Gdzie zapisac wynik.
+DLUGOSC_OKNA = 20      # dlugosc jednej probki (okna)
+ZAKLADKA = 0.5         # probki nachodza na siebie w 50 procentach
+PLIK_WYJSCIOWY = "okna_dane.npz"   # nazwa pliku wyniku (laduje do folderu wynikow)
 
 
 # ============================================================
@@ -16,7 +16,7 @@ def polska_liczba(tekst):
     return float(tekst.strip().strip('"').replace(",", "."))
 
 
-def wczytaj_jeden_plik(sciezka): #Wczytuje jeden plik CSV. Zwraca trzy tablice: sila [kN], przemieszczenie [mm], czas [s].
+def wczytaj_jeden_plik(sciezka):  # Wczytuje jeden plik CSV. Zwraca trzy tablice: sila [kN], przemieszczenie [mm], czas [s].
     sila, przemieszczenie, czas = [], [], []
     with open(sciezka, encoding="utf-8-sig") as f:
         linie = f.readlines()
@@ -37,8 +37,8 @@ def wczytaj_jeden_plik(sciezka): #Wczytuje jeden plik CSV. Zwraca trzy tablice: 
     return np.array(sila), np.array(przemieszczenie), np.array(czas)
 
 
-def policz_predkosc(przemieszczenie, czas): #Liczy predkosc = zmiana przemieszczenia / zmiana czasu.
-    return np.gradient(przemieszczenie, czas) #np.gradient daje predkosc dla kazdego punktu (radzi sobie z brzegami).
+def policz_predkosc(przemieszczenie, czas):  # Liczy predkosc = zmiana przemieszczenia / zmiana czasu.
+    return np.gradient(przemieszczenie, czas)  # np.gradient daje predkosc dla kazdego punktu (radzi sobie z brzegami).
 
 
 def potnij_na_okna(sila, przemieszczenie, predkosc, dlugosc, zakladka):
@@ -64,16 +64,18 @@ def potnij_na_okna(sila, przemieszczenie, predkosc, dlugosc, zakladka):
     return okna
 
 
-
 def main():
+    log = Logger("01_parsowanie_log.txt")
+
     folder = Path(FOLDER_Z_DANYMI)
-    pliki = sorted(folder.glob("*.csv")) 
+    pliki = sorted(folder.glob("*.csv"))
 
     if not pliki:
-        print(f"Nie znalazlem zadnych plikow CSV w: {folder.resolve()}")
+        log(f"Nie znalazlem zadnych plikow CSV w: {folder.resolve()}")
+        log.zapisz()
         return
 
-    print(f"Znalazlem {len(pliki)} plikow CSV.\n")
+    log(f"Znalazlem {len(pliki)} plikow CSV.\n")
 
     wszystkie_okna = []      # tu zbieramy wszystkie okna ze wszystkich plikow
     id_pliku_dla_okna = []   # dla kazdego okna - z ktorego pliku pochodzi
@@ -83,7 +85,7 @@ def main():
         sila, przem, czas = wczytaj_jeden_plik(sciezka)
 
         if len(sila) < DLUGOSC_OKNA:
-            print(f"  [POMIJAM] {sciezka.name}: za malo danych ({len(sila)} probek)")
+            log(f"  [POMIJAM] {sciezka.name}: za malo danych ({len(sila)} probek)")
             continue
 
         predkosc = policz_predkosc(przem, czas)
@@ -93,21 +95,23 @@ def main():
         id_pliku_dla_okna.extend([nr_pliku] * len(okna))
         nazwy_plikow.append(sciezka.name)
 
-        print(f"  {sciezka.name}: {len(sila)} probek -> {len(okna)} okien")
+        log(f"  {sciezka.name}: {len(sila)} probek -> {len(okna)} okien")
 
     # zamiana list na tablice numpy
     X = np.array(wszystkie_okna)              # ksztalt: (liczba_okien, dlugosc, 3)
     id_pliku = np.array(id_pliku_dla_okna)    # ksztalt: (liczba_okien,)
 
-    print(f"\nRAZEM: {X.shape[0]} okien, kazde o ksztalcie {X.shape[1:]} (probki x [sila, przem, predkosc])")
+    log(f"\nRAZEM: {X.shape[0]} okien, kazde o ksztalcie {X.shape[1:]} (probki x [sila, przem, predkosc])")
 
+    sciezka_npz = sciezka_wyniku(PLIK_WYJSCIOWY)
     np.savez(
-        PLIK_WYJSCIOWY,
+        sciezka_npz,
         X=X,
         id_pliku=id_pliku,
         nazwy_plikow=np.array(nazwy_plikow),
     )
-    print(f"Zapisano do: {PLIK_WYJSCIOWY}")
+    log(f"Zapisano do: {sciezka_npz}")
+    log.zapisz()
 
 
 if __name__ == "__main__":
