@@ -1,11 +1,19 @@
 """
+03_siec.py
+==========
+Co robi ten skrypt (po ludzku):
 1. Wczytuje okna + etykiety (wynik z 02_etykietuj.py).
-2. Dzieli dane na trening / walidacje / test - dzieli PO PLIKACH,
-   nie po oknach. 
+2. Dzieli dane na trening / walidacje / test - ale UWAGA: dzieli PO PLIKACH,
+   nie po oknach. Czemu? Bo okna z jednego pliku sa do siebie podobne. Gdyby
+   czesc trafila do treningu a czesc do testu, siec "oszukiwalaby" znajac
+   odpowiedzi. Dzielac po plikach test jest uczciwy.
 3. Skaluje dane (z-score) - liczone TYLKO z treningu, zeby test byl czysty.
 4. Trenuje mala siec konwolucyjna 1D (CNN1D) w Keras.
 5. Liczy i rysuje: krzywa ROC + AUROC, precision, recall, accuracy, F1,
    krzywa precision-recall, macierz pomylek.
+
+Uruchomienie:
+    python 03_siec.py
 """
 
 import numpy as np
@@ -25,12 +33,21 @@ np.random.seed(SEED)
 tf.random.set_seed(SEED)
 
 # ============================================================
+# USTAWIENIA
+# ============================================================
 
 PLIK_WEJSCIOWY = "okna_etykiety.npz"
 EPOKI = 40
 ROZMIAR_BATCHA = 32
+
+# Jak dzielimy pliki: jaka czesc na test i walidacje (reszta na trening).
 UDZIAL_TEST = 0.2
 UDZIAL_WALIDACJA = 0.2
+
+
+# ============================================================
+# PRZYGOTOWANIE DANYCH
+# ============================================================
 
 def podziel_po_plikach(id_pliku):
     """
@@ -74,7 +91,8 @@ def skaluj(X_tren, X_wal, X_test):
 
 
 # ============================================================
-
+# SIEC
+# ============================================================
 
 def zbuduj_siec(ksztalt_wejscia):
     """
@@ -101,12 +119,14 @@ def zbuduj_siec(ksztalt_wejscia):
 
 
 # ============================================================
+# WYKRESY
+# ============================================================
 
 def zrob_wykresy(y_test, y_prob, y_pred):
     """Rysuje wszystkie wymagane wykresy do jednego pliku PNG."""
     fig, osie = plt.subplots(2, 2, figsize=(12, 10))
 
-    # 1) Krzywa ROC + AUROC - wychodzi zbyt idealnie
+    # 1) Krzywa ROC + AUROC
     fpr, tpr, _ = roc_curve(y_test, y_prob)
     auroc = roc_auc_score(y_test, y_prob)
     ax = osie[0, 0]
@@ -151,8 +171,8 @@ def zrob_wykresy(y_test, y_prob, y_pred):
     }
     ax = osie[1, 1]
     ax.bar(metryki.keys(), metryki.values())
-    ax.set_ylim(0, 1)
-    ax.set_title("Metryki na zbiorze testowym")
+    ax.set_ylim(0, 1.12)
+    ax.set_title("Metryki na zbiorze testowym", pad=12)
     for i, (k, v) in enumerate(metryki.items()):
         ax.text(i, v + 0.02, f"{v:.3f}", ha="center")
 
@@ -163,6 +183,9 @@ def zrob_wykresy(y_test, y_prob, y_pred):
 
 
 # ============================================================
+# GLOWNA CZESC
+# ============================================================
+
 def main():
     dane = np.load(PLIK_WEJSCIOWY, allow_pickle=True)
     X = dane["X"].astype("float32")
@@ -183,6 +206,12 @@ def main():
     X_tren, X_wal, X_test = skaluj(X[maska_tren], X[maska_wal], X[maska_test])
     y_tren, y_wal, y_test = y[maska_tren], y[maska_wal], y[maska_test]
 
+    # zapamietujemy parametry skalowania (z treningu) i ktore pliki sa testowe -
+    # 05_zastosowanie.py uzyje ich, by odtworzyc DOKLADNIE ten sam stan bez treningu
+    srednia_skali = X[maska_tren].mean(axis=(0, 1), keepdims=True)
+    odchyl_skali = X[maska_tren].std(axis=(0, 1), keepdims=True) + 1e-8
+    pliki_testowe = np.unique(id_pliku[maska_test])
+
     # waga klas - jak odchylek jest malo, mowimy sieci ze sa wazniejsze
     n0, n1 = (y_tren == 0).sum(), (y_tren == 1).sum()
     waga_klas = {0: 1.0, 1: float(n0) / max(1, n1)}
@@ -201,8 +230,8 @@ def main():
 
     # przewidywania na tescie
     y_prob = model.predict(X_test, verbose=0).ravel()
-    print(y_prob)
-    y_pred = (y_prob >= 0.5).astype(int) #rzutowanie NIE TUTAJ !!!
+    y_pred = (y_prob >= 0.5).astype(int)
+
     metryki, auroc = zrob_wykresy(y_test, y_prob, y_pred)
 
     print("\n=== WYNIKI NA TESCIE ===")
@@ -212,6 +241,15 @@ def main():
 
     model.save("model_amortyzator.keras")
     print("\nModel zapisany do: model_amortyzator.keras")
+
+    # zapisujemy parametry potrzebne 05_zastosowanie.py, by uzyc tej samej sieci
+    np.savez(
+        "model_parametry.npz",
+        srednia=srednia_skali,
+        odchyl=odchyl_skali,
+        pliki_testowe=pliki_testowe,
+    )
+    print("Parametry (skalowanie + pliki testowe) zapisane do: model_parametry.npz")
 
 
 if __name__ == "__main__":
