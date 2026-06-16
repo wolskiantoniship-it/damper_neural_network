@@ -3,11 +3,11 @@ from pathlib import Path
 from parametry import sciezka_wyniku, Logger
 
 
-FOLDER_Z_DANYMI = "dane"  # sciezka wzgledna - folder 'dane' obok skryptow
+FOLDER_Z_DANYMI = "dane"  # sciezka
 LINIE_NAGLOWKA = 8
 DLUGOSC_OKNA = 20      # dlugosc jednej probki (okna)
 ZAKLADKA = 0.5         # probki nachodza na siebie w 50 procentach
-PLIK_WYJSCIOWY = "okna_dane.npz"   # nazwa pliku wyniku (laduje do folderu wynikow)
+PLIK_WYJSCIOWY = "okna_dane.npz"   # nazwa pliku wyniku 
 
 
 # ============================================================
@@ -42,9 +42,6 @@ def policz_predkosc(przemieszczenie, czas):  # Liczy predkosc = zmiana przemiesz
 
 
 def potnij_na_okna(sila, przemieszczenie, predkosc, dlugosc, zakladka):
-    """ Tnie dlugie przebiegi na krotkie okna.
-    Kazde okno to kawalek sygnalu o ksztalcie (dlugosc, 3),
-    gdzie 3 kolumny to: sila, przemieszczenie, predkosc. """
     krok = int(dlugosc * (1 - zakladka))
     if krok < 1:
         krok = 1
@@ -60,7 +57,6 @@ def potnij_na_okna(sila, przemieszczenie, predkosc, dlugosc, zakladka):
         ])
         okna.append(okno)
         start += krok
-
     return okna
 
 

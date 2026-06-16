@@ -1,7 +1,4 @@
 """
-04_horyzonty.py   (wersja z powtarzaniem - srednia +- odchylenie)
-==================================================================
-Co robi (po ludzku):
 Sprawdza, jak daleko w przod da sie przewidziec odchylke - ale teraz
 KAZDY horyzont liczymy WIELE RAZY z roznym losowym podzialem plikow.
 Dzieki temu zamiast jednej liczby AUROC dostajemy SREDNIA +- ODCHYLENIE.

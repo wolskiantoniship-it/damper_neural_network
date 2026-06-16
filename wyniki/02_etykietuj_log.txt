@@ -1,0 +1,10 @@
+Wczytano 2592 okien.
+Horyzont predykcji H = 20 okien
+Biezace odchylki WZGLEDNE (ulamek): min 0.0110, mediana 2.3452, max 9.1090
+
+Prog wzgledny: 3.5 (skala ulamka odstepstwa od wzorca)
+Okien z etykieta: 2232  (pominieto 360 koncow plikow)
+  poprawne (0): 1598
+  odchylki (1): 634  (28.4%)
+
+Zapisano do: wyniki\okna_etykiety.npz  (horyzont H=20)

@@ -30,13 +30,13 @@ import numpy as np
 C_WZORZEC = 0.00278
 
 # horyzont predykcji: ile okien w przod patrzy etykieta
-HORYZONT_H = 10
+HORYZONT_H = 20
 
 # prog odchylki WZGLEDNEJ (bezwymiarowy, w skali ulamka odstepstwa od wzorca).
 # UWAGA: to NIE jest 0.04 - przy obecnych danych mediana odchylek ~2.3,
 # a max ~9.1, wiec prog 4 oznacza "okno odbiega srednio ~4x bardziej
 # niz typowo wynosi odstepstwo od wzorca". Dobrany z podgladu progu (03).
-PROG_WZGLEDNY = 4
+PROG_WZGLEDNY = 3.5
 
 # epsilon chroni przed dzieleniem przez ~0, gdy tlok zawraca (v~0 -> C*v~0).
 # Jednostka: kN. Dobrany jako maly ulamek typowej sily.

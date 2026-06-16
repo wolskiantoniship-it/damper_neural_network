@@ -1,0 +1,38 @@
+Dane: 2232 okien, ksztalt okna (20, 3)
+Rozklad etykiet -> poprawne: 1598, odchylki: 634
+Pliki -> trening: 12, walidacja: 3, test: 3
+Model: "sequential"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ conv1d (Conv1D)                      │ (None, 20, 16)              │             160 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling1d (MaxPooling1D)         │ (None, 10, 16)              │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv1d_1 (Conv1D)                    │ (None, 10, 32)              │           1,568 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ global_average_pooling1d             │ (None, 32)                  │               0 │
+│ (GlobalAveragePooling1D)             │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense (Dense)                        │ (None, 16)                  │             528 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout (Dropout)                    │ (None, 16)                  │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_1 (Dense)                      │ (None, 1)                   │              17 │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 2,273 (8.88 KB)
+ Trainable params: 2,273 (8.88 KB)
+ Non-trainable params: 0 (0.00 B)
+
+
+Wykresy zapisane do: wyniki\wyniki.png
+
+=== WYNIKI NA TESCIE ===
+AUROC:     0.971
+accuracy   0.863
+precision  0.738
+recall     1.000
+f1         0.850
+
+Model zapisany do: wyniki\model_amortyzator.keras
+Parametry (skalowanie + pliki testowe) zapisane do: wyniki\model_parametry.npz

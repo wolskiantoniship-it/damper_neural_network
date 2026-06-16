@@ -1,0 +1,11 @@
+H=  2: siec 0.993 +- 0.005 (z 7 powt.) | sciaga 0.900
+H=  5: siec 0.981 +- 0.014 (z 7 powt.) | sciaga 0.752
+H= 10: siec 0.957 +- 0.028 (z 7 powt.) | sciaga 0.626
+H= 20: siec 0.930 +- 0.059 (z 7 powt.) | sciaga 0.407
+H= 40: siec 0.940 +- 0.048 (z 7 powt.) | sciaga 0.389
+
+Wykres zapisany do: wyniki\horyzonty.png
+(kazdy punkt sieci = srednia z 7 podzialow, slupek = odchylenie)
+
+JAK CZYTAC: maly slupek bledu = wynik STABILNY (nie zalezy od podzialu).
+Duzy slupek = wynik niepewny, zalezny od tego ktore pliki w tescie.

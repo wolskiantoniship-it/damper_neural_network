@@ -1,0 +1,27 @@
+Wczytano gotowa siec. Pliki testowe (z 05_siec.py): [np.int64(12), np.int64(16), np.int64(17)]
+AUROC na tescie (ta sama siec co w 05): 0.971
+
+Jedno okno do nastepnego = 1.00 s
+Horyzont H=20 okien = 20.0 s w przyszlosc
+(UWAGA: to ZALOZONE wyprzedzenie - wynika z konstrukcji etykiety,
+ ktora z definicji patrzy H okien w przod; nie jest mierzone z danych.)
+
+================================================================
+OCENA PER PROG DECYZYJNY
+================================================================
+ prog |  alarmy | trafione | falszywe | przeocz. | wyprzedz.[s]
+----------------------------------------------------------------
+  0.3 |     216 |      144 |       72 |        0 |         20.0
+  0.5 |     195 |      144 |       51 |        0 |         20.0
+  0.7 |     177 |      142 |       35 |        2 |         20.0
+
+================================================================
+WERDYKT PER AMORTYZATOR (prog alarmu = 0.5)
+================================================================
+    plik |  % alarmow | werdykt
+----------------------------------------------------------------
+plik # 12 |      46.0% | WYMAGA UWAGI
+plik # 16 |      54.8% | WYMAGA UWAGI
+plik # 17 |      56.5% | WYMAGA UWAGI
+
+Wykres zapisany do: wyniki\zastosowanie.png (plik #17)

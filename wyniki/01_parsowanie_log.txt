@@ -1,0 +1,23 @@
+Znalazlem 18 plikow CSV.
+
+  Run27.csv: 1456 probek -> 144 okien
+  Run_10.csv: 1455 probek -> 144 okien
+  Run_11.csv: 1455 probek -> 144 okien
+  Run_12.csv: 1455 probek -> 144 okien
+  Run_13.csv: 1455 probek -> 144 okien
+  Run_14.csv: 1455 probek -> 144 okien
+  Run_15.csv: 1455 probek -> 144 okien
+  Run_16.csv: 1456 probek -> 144 okien
+  Run_17.csv: 1455 probek -> 144 okien
+  Run_18.csv: 1455 probek -> 144 okien
+  Run_19.csv: 1455 probek -> 144 okien
+  Run_20.csv: 1455 probek -> 144 okien
+  Run_21.csv: 1455 probek -> 144 okien
+  Run_22.csv: 1455 probek -> 144 okien
+  Run_23.csv: 1455 probek -> 144 okien
+  Run_24.csv: 1456 probek -> 144 okien
+  Run_25.csv: 1455 probek -> 144 okien
+  Run_26.csv: 1455 probek -> 144 okien
+
+RAZEM: 2592 okien, kazde o ksztalcie (20, 3) (probki x [sila, przem, predkosc])
+Zapisano do: wyniki\okna_dane.npz
